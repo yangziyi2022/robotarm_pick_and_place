@@ -1,0 +1,10 @@
+<launch>
+    <!-- 靜態變換：設置 camera_frame 相對於 map -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_map_tf" args="0 0 0 0 0 0 map camera_frame" />
+
+    <!-- 啟動 vision_node.py -->
+    <node pkg="vision_module" type="vision_node.py" name="vision_node" output="screen" />
+
+    <!--啟動rviz-->
+    <node pkg="rviz" type="rviz" name='rviz' args="-d $(find vision_module)/rviz/vision_config.rviz" />
+</launch>

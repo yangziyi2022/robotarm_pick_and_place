@@ -3,11 +3,16 @@ import rospy
 import pyrealsense2 as rs
 import numpy as np
 import cv2
+
+from sensor_msgs.msg import PointCloud2, PointField
+from sensor_msgs import point_cloud2
 from geometry_msgs.msg import Point
+
 
 def vision_node():
     rospy.init_node('vision_node', anonymous=True)
     pub = rospy.Publisher('/robot_target', Point, queue_size=10)
+    pointcloud_pub = rospy.Publisher('/vision_pointcloud', PointCloud2, queue_size=10)
     rate = rospy.Rate(10)
 
     # 初始化 RealSense 相機
@@ -33,7 +38,7 @@ def vision_node():
             # 顏色檢測（白色物體）
             hsv_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
             lower_white = np.array([0, 0, 200])
-            upper_white = np.array([180, 30, 255])
+            upper_white = np.array([180, 255, 255])
             mask = cv2.inRange(hsv_image, lower_white, upper_white)
 
             # 形态学操作
@@ -44,6 +49,9 @@ def vision_node():
 
             # 尋找輪廓
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            # 蒐集點
+            points = []
+
             for contour in contours:
                 area = cv2.contourArea(contour)
                 if area > 500:
@@ -53,6 +61,7 @@ def vision_node():
                     depth = depth_frame.get_distance(center_x, center_y)
                     intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
                     point_3d = rs.rs2_deproject_pixel_to_point(intrinsics, [center_x, center_y], depth)
+                    points.append([point_3d[0], point_3d[1], point_3d[2]])
                     print(f"目標點: {point_3d}")
 
                     # 發布目標點到 /robot_target
@@ -64,6 +73,12 @@ def vision_node():
                     cv2.rectangle(color_image, (x, y), (x+w, y+h), (0, 255, 0), 2)
                     cv2.circle(color_image, (center_x, center_y), 5, (0, 0, 255), -1)
 
+            # 創建PointCloud2 消息
+            header = rospy.Header()
+            header.stamp = rospy.Time.now()
+            header.frame_id = "camera_frame"
+            cloud_msg = point_cloud2.create_cloud_xyz32(header, points)
+            pointcloud_pub.publish(cloud_msg)
 
             cv2.imshow("Color Image", color_image)
             cv2.imshow("Mask", mask)
