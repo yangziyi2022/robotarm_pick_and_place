@@ -1,0 +1,8 @@
+prefix=/home/yangziyi/myrobot/install
+
+Name: vision_module
+Description: Description of vision_module
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

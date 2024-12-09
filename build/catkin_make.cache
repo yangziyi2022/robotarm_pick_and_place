@@ -1,0 +1,2 @@
+vision_module
+-DCATKIN_DEVEL_PREFIX=/home/yangziyi/myrobot/devel -DCMAKE_INSTALL_PREFIX=/home/yangziyi/myrobot/install -G Unix Makefiles
