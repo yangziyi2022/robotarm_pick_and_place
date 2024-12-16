@@ -95,8 +95,8 @@ def vision_node():
 
             # 顏色檢測（白色物體）
             hsv_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
-            lower_white = np.array([0, 0, 200])
-            upper_white = np.array([180, 255, 255])
+            lower_white = np.array([20, 100, 67])
+            upper_white = np.array([30, 255, 255])
             mask = cv2.inRange(hsv_image, lower_white, upper_white)
 
             # 形态学操作
@@ -116,11 +116,22 @@ def vision_node():
                     x, y, w, h = cv2.boundingRect(contour)
                     center_x = x + w // 2
                     center_y = y + h // 2
-                    depth = depth_frame.get_distance(center_x, center_y)
-                    intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
-                    point_3d = rs.rs2_deproject_pixel_to_point(intrinsics, [center_x, center_y], depth)
-                    points.append([point_3d[0], point_3d[1], point_3d[2]])
-                    print(f"目標點: {point_3d}")
+                    # depth = depth_frame.get_distance(center_x, center_y)
+                    depth_values = [
+                        depth_frame.get_distance(center_x + dx, center_y + dy)
+                        for dx, dy in [(-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
+                    ]
+                     # 過濾合理範圍內的深度值
+                    valid_depths = [d for d in depth_values if 0.2 < d < 10]
+
+                    if valid_depths:
+                        depth = np.mean(valid_depths)
+                        intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
+                        point_3d = rs.rs2_deproject_pixel_to_point(intrinsics, [center_x, center_y], depth)
+                        points.append([point_3d[0], point_3d[1], point_3d[2]])
+                        print(f"目標點: {point_3d}")
+                    else:
+                        print("深度超出範圍")
 
                     # 發布目標點到 /robot_target
                     msg = Point()
