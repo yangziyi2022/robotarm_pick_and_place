@@ -19,3 +19,10 @@ source devel/setup.bash
 roslaunch vision_module execute_all.launch
 ```
 *Note: if you want to run just the simulation without having the arm connected, change the real_arm parameter to false.*
+
+If you want to run detection with transformer(detects cup)
+just run
+```
+rosrun vision_module detection_with_detr.py
+```
+
